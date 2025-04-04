@@ -1,0 +1,19 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+            {
+            "name": "Python Debugger: pseg_parse",
+            "args":[
+                "-b", "D:\\NapcoSvn\\Python\\pseg_parse\\2025-01-16 to 2025-02-13--Usage.csv",
+                "-e", "D:\\NapcoSvn\\Python\\pseg_parse\\parsed.xlsx"
+            ],
+            "type": "debugpy",
+            "request": "launch",
+            "program": "pseg_parse.py",
+            "console": "integratedTerminal"
+        }
+    ]
+}
