@@ -41,6 +41,14 @@ def pseg_parse(csv_file_name: str, xslx_file_name: str) -> None:
     """
     Parse PSEG downloaded CSV file and create Excel xslx file.
     """
+    # Peak time is from 3:00 PM up to 7:00 PM except weekends.
+    peak_start: datetime = datetime(2025, 1, 1, 15, 0, 0)
+    peak_end: datetime = datetime(2025, 1, 1, 18, 59, 59)
+
+    # Super Off-Peak is from 10:00 PM up to 6:00 AM including weekends
+    super_off_peak_start: datetime = datetime(2025, 1, 1, 22, 0, 0)
+    super_off_peak_end: datetime = datetime(2025, 1, 2, 5, 59, 59)
+
     workbook: Workbook = xlsxwriter.Workbook(xslx_file_name)
     worksheet: Unknown | Worksheet = workbook.add_worksheet('PSEG TOU Usage')
     if worksheet is None:
@@ -71,11 +79,15 @@ def pseg_parse(csv_file_name: str, xslx_file_name: str) -> None:
                     gen_meter_num = int(re.split(' #|g - ', gen_meter[1])[1])
                 except ValueError:
                     print(f'Error parsing usage data at lines [{line} - {line + 1}].  Check that both meter and generated meter data are included.')
-        except StopIteration:
-            print(f'Read beyond end of file at line {line}.  Check that both meter and generated meter data are included.')
-            
+                    return
                 
-                meter = line[1].split(' '
+                if meter_num != gen_meter_num:
+                    print(f'Mismatched meters at lines [{line} - {line + 1}].')
+                    return
+                
+
+        except StopIteration:
+            print('Read beyond end of file.  Check that both meter and generated meter data are included.')
 
 
 
