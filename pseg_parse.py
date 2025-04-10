@@ -11,13 +11,13 @@ import xlsxwriter
 
 # Peak and super off peak time periods.
 # Peak time is from 3:00 PM up to 7:00 PM except weekends.
-PEAK_START: time = time(15, 0, 0)
-PEAK_END: time = time(18, 59, 59)
+PEAK_START: time = time(15, 0, 1)
+PEAK_END: time = time(19, 0, 0)
 
 # Super Off-Peak is from 10:00 PM up to 5:59:59 AM including weekends.
 # Shift by two hours to make comparisons easier.
 TIME_OFFSET: timedelta = timedelta (hours = 2)
-SUPER_OFF_PEAK_START: time = (datetime(1, 1, 1, 22, 0, 0) + TIME_OFFSET).time()
+SUPER_OFF_PEAK_START: time = (datetime(1, 1, 1, 22, 0, 1) + TIME_OFFSET).time()
 SUPER_OFF_PEAK_END: time = (datetime(1, 1, 1, 5, 59, 59) + TIME_OFFSET).time()
 
 def get_day_of_week(date: datetime) -> int:
