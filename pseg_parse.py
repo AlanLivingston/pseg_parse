@@ -10,15 +10,18 @@ from datetime import datetime, time, timedelta
 import xlsxwriter
 
 # Peak and super off peak time periods.
-# Peak time is from 3:00 PM up to 7:00 PM except weekends.
+# Peak time is from 3:00 PM up to 7:00 PM except weekends.  3:00 PM reading is last meter reading for off-peak.  3:15 is first peam reading.
+# Similarly, the last peak reading is at 7:00 PM, and off-peak starts with the 7:15 PM reading.
 PEAK_START: time = time(15, 0, 1)
-PEAK_END: time = time(18, 59, 59)
+PEAK_END: time = time(19, 0, 0)
 
-# Super Off-Peak is from 10:00 PM up to 5:59:59 AM including weekends.
-# Shift by two hours to make comparisons easier.
+# Super Off-Peak is from 10:00 PM up to 6:00:00 AM including weekends.
+# Similar to peak start and end, The last off-peak reading ends at 10:00 PM and 10:15 is the first meter reading for super off-peak.
+# The last meter reading for super off-peak occurs at 6:00 AM the next day.
+# Shift by three hours to make comparisons easier.  This gets the time periods in the same day (1 AM to 9 AM).
 TIME_OFFSET: timedelta = timedelta (hours = 2)
 SUPER_OFF_PEAK_START: time = (datetime(1, 1, 1, 22, 0, 1) + TIME_OFFSET).time()
-SUPER_OFF_PEAK_END: time = (datetime(1, 1, 1, 5, 59, 59) + TIME_OFFSET).time()
+SUPER_OFF_PEAK_END: time = (datetime(1, 1, 1, 6, 00, 00) + TIME_OFFSET).time()
 
 def get_day_of_week(date: datetime) -> int:
     """
@@ -80,14 +83,6 @@ def pseg_parse(csv_file_name: str, xslx_file_name: str) -> None:
     """
     Parse PSEG downloaded CSV file and create Excel xslx file.
     """
-    # Peak time is from 3:00 PM up to 7:00 PM except weekends.
-    peak_start: datetime = datetime(2025, 1, 1, 15, 0, 0)
-    peak_end: datetime = datetime(2025, 1, 1, 18, 59, 59)
-
-    # Super Off-Peak is from 10:00 PM up to 6:00 AM including weekends
-    super_off_peak_start: datetime = datetime(2025, 1, 1, 22, 0, 0)
-    super_off_peak_end: datetime = datetime(2025, 1, 2, 5, 59, 59)
-
     workbook: Workbook = xlsxwriter.Workbook(xslx_file_name, {'default_date_format': 'mmm dd yyyy hh:mm'})
     worksheet: Unknown | Worksheet = workbook.add_worksheet('PSEG TOU Usage')
     if worksheet is None:
