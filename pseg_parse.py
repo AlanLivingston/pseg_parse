@@ -8,6 +8,9 @@ from csv import reader
 from argparse import ArgumentParser
 from datetime import datetime, time, timedelta
 import xlsxwriter
+from set_outer_border_for_range_xlsx import apply_outer_border_to_range
+
+FIRST_HEADER_ROW: int = 3
 
 # Peak and super off peak time periods.
 # Peak time is from 3:00 PM up to 7:00 PM except weekends.  3:00 PM reading is last meter reading for off-peak.  3:15 is first peam reading.
@@ -53,31 +56,170 @@ def is_super_off_peak_time(date_time_val: datetime) -> bool:
 
     return (time_val >= SUPER_OFF_PEAK_START) and (time_val <= SUPER_OFF_PEAK_END)
 
-def add_title_cells(book, sheet) -> None:
+def add_title_cells(book, sheet) -> int:
     """
     Adds titles for various TOU plans
     """
-    merge_format = book.add_format({
+    merge_center = book.add_format({
         "bold": 0,
         "border": 0,
         "align": "center",
         "valign": "vcenter"
     })
+    merge_left = book.add_format({
+        "bold": 0,
+        "border": 0,
+        "align": "left",
+        "valign": "vcenter"
+    })
 
-    sheet.merge_range('B1:C1', 'Non-TOU Billing', merge_format)
-    sheet.merge_range('E1:H1', 'Off-Peak Billing', merge_format)
-    sheet.merge_range('J1:O1', 'Super Off-Peak Billing', merge_format)
+    row_num: int = FIRST_HEADER_ROW
+    sheet.write(f'B{row_num}', 'Non-TOU Consumed:', merge_left)
+    sheet.write(f'E{row_num}', 'Off-Peak Consumed:', merge_left)
+    sheet.write(f'H{row_num}', 'Super Off-Peak Consumed:', merge_left)
+    row_num += 1
 
-    sheet.merge_range('E2:F2', 'Peak', merge_format)
-    sheet.merge_range('G2:H2', 'Off-Peak', merge_format)
+    sheet.write(f'B{row_num}', 'Non-TOU Generated:', merge_left)
+    sheet.write(f'E{row_num}', 'Off-Peak Generated:', merge_left)
+    sheet.write(f'H{row_num}', 'Super Off-Peak Generated:', merge_left)
+    row_num += 1
 
-    sheet.merge_range('J2:K2', 'Peak', merge_format)
-    sheet.merge_range('L2:M2', 'Off-Peak', merge_format)
-    sheet.merge_range('N2:O2', 'Super Off-Peak', merge_format)
+    sheet.write(f'E{row_num}', 'Peak Consumed:', merge_left)
+    sheet.write(f'H{row_num}', 'Off-Peak Consumed:', merge_left)
+    row_num += 1
 
-    sheet.write_row('A3', ['Time', 'Consumed', 'Generated', '',
+    sheet.write(f'E{row_num}', 'Peak Generated:', merge_left)
+    sheet.write(f'H{row_num}', 'Off-Peak Generated:', merge_left)
+    row_num += 1
+
+    sheet.write(f'H{row_num}', 'Peak Consumed:', merge_left)
+    row_num += 1
+
+    sheet.write(f'H{row_num}', 'Peak Generated:', merge_left)
+    row_num += 2
+
+    sheet.write(f'B{row_num}', 'Non-TOU Net:', merge_left)
+    sheet.write(f'E{row_num}', 'Off-Peak Net:', merge_left)
+    sheet.write(f'H{row_num}', 'Super Off-Peak Net:', merge_left)
+    row_num += 1
+
+    sheet.write(f'E{row_num}', 'Peak Net:', merge_left)
+    sheet.write(f'H{row_num}', 'Off-Peak Net:', merge_left)
+    row_num += 1
+
+    sheet.write(f'H{row_num}', 'Peak Net:', merge_left)
+    row_num += 2
+
+    sheet.write(f'B{row_num}', 'Bill:', merge_left)
+    sheet.write(f'E{row_num}', 'Bill:', merge_left)
+    sheet.write(f'H{row_num}', 'Bill:', merge_left)
+    row_num += 2
+
+    sheet.merge_range(f'B{row_num}:C{row_num}', 'Non-TOU Billing', merge_center)
+    sheet.merge_range(f'E{row_num}:H{row_num}', 'Off-Peak Billing', merge_center)
+    sheet.merge_range(f'J{row_num}:O{row_num}', 'Super Off-Peak Billing', merge_center)
+    row_num += 1
+
+    sheet.merge_range(f'E{row_num}:F{row_num}', 'Peak', merge_center)
+    sheet.merge_range(f'G{row_num}:H{row_num}', 'Off-Peak', merge_center)
+
+    sheet.merge_range(f'J{row_num}:K{row_num}', 'Peak', merge_center)
+    sheet.merge_range(f'L{row_num}:M{row_num}', 'Off-Peak', merge_center)
+    sheet.merge_range(f'N{row_num}:O{row_num}', 'Super Off-Peak', merge_center)
+    row_num += 1
+
+    sheet.write_row(f'A{row_num}', ['Time', 'Consumed', 'Generated', '',
                            'Consumed', 'Generated', 'Consumed', 'Generated', '',
                            'Consumed', 'Generated', 'Consumed', 'Generated', 'Consumed', 'Generated'])
+    row_num += 1
+
+    sheet.freeze_panes(f'B{row_num}')
+
+    # Return first row number after titles
+    return row_num
+
+def add_formulas(sheet, first_header_row: int, first_data_row: int, last_data_row: int) -> None:
+    """
+    Populates formulas in header of worksheet.
+    """
+
+    # Non-TOU billing formulas
+    sheet.write_formula(f'C{first_header_row}', f'=SUM(B{first_data_row}:B{last_data_row})')                # Consumed
+    sheet.write_formula(f'C{first_header_row + 1}', f'=SUM(C{first_data_row}:C{last_data_row})')            # Generated
+    sheet.write_formula(f'C{first_header_row + 7}', f'=C{first_header_row} + C{first_header_row + 1}')      # Net
+
+    # Off-Peak billing formulas
+    sheet.write_formula(f'F{first_header_row}', f'=SUM(G{first_data_row}:G{last_data_row})')                # Off-Peak consumed
+    sheet.write_formula(f'F{first_header_row + 1}', f'=SUM(H{first_data_row}:H{last_data_row})')            # Off-Peak generated
+    sheet.write_formula(f'F{first_header_row + 7}', f'=F{first_header_row} + F{first_header_row + 1}')      # Off-Peak net
+    sheet.write_formula(f'F{first_header_row + 2}', f'=SUM(E{first_data_row}:E{last_data_row})')            # Peak consumed
+    sheet.write_formula(f'F{first_header_row + 3}', f'=SUM(F{first_data_row}:F{last_data_row})')            # Peak generated
+    sheet.write_formula(f'F{first_header_row + 8}', f'=F{first_header_row + 2} + F{first_header_row + 3}')  # Peak net
+
+    # Super Off-Peak billing formulas
+    sheet.write_formula(f'I{first_header_row}', f'=SUM(N{first_data_row}:N{last_data_row})')                # Super Off-Peak consumed
+    sheet.write_formula(f'I{first_header_row + 1}', f'=SUM(O{first_data_row}:O{last_data_row})')            # Super Off-Peak generated
+    sheet.write_formula(f'I{first_header_row + 7}', f'=I{first_header_row} + I{first_header_row + 1}')      # Super Off-Peak net
+    sheet.write_formula(f'I{first_header_row + 2}', f'=SUM(L{first_data_row}:L{last_data_row})')            # Off-Peak consumed
+    sheet.write_formula(f'I{first_header_row + 3}', f'=SUM(M{first_data_row}:M{last_data_row})')            # Off-Peak generated
+    sheet.write_formula(f'I{first_header_row + 8}', f'=I{first_header_row + 2} + I{first_header_row + 3}')  # Off-Peak net
+    sheet.write_formula(f'I{first_header_row + 4}', f'=SUM(J{first_data_row}:J{last_data_row})')            # Peak consumed
+    sheet.write_formula(f'I{first_header_row + 5}', f'=SUM(K{first_data_row}:K{last_data_row})')            # Peak generated
+    sheet.write_formula(f'I{first_header_row + 9}', f'=I{first_header_row + 4} + I{first_header_row + 5}')  # Peak net
+
+
+def format_cells(book, sheet, first_data_row: int, last_data_row: int) -> None:
+    """
+    Add borders to data and header columns.
+    """
+    # Non-TOU Billing Header
+    apply_outer_border_to_range(book, sheet, {"range_string": "B18:B18", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "C18:C18", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "B16:C18", "border_style": 5})
+
+    # Non-TOU Billing data
+    apply_outer_border_to_range(book, sheet, {"range_string": f"B{first_data_row}:B{last_data_row}", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": f"B{first_data_row}:C{last_data_row}", "border_style": 5})
+
+    # Off-Peak Billing Header
+    apply_outer_border_to_range(book, sheet, {"range_string": "E17:F17", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "G17:H17", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "E18:E18", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "F18:F18", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "G18:G18", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "H18:H18", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "E16:H18", "border_style": 5})
+
+    # Off-Peak Billing data
+    apply_outer_border_to_range(book, sheet, {"range_string": f"E{first_data_row}:E{last_data_row}", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": f"F{first_data_row}:F{last_data_row}", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": f"G{first_data_row}:G{last_data_row}", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": f"E{first_data_row}:H{last_data_row}", "border_style": 5})
+
+    # Super Off-Peak Billing Header
+    apply_outer_border_to_range(book, sheet, {"range_string": "J17:K17", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "L17:M17", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "N17:O17", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "J18:J18", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "K18:K18", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "L18:L18", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "M18:M18", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "N18:N18", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "O18:O18", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": "J16:O18", "border_style": 5})
+
+    # Super Off-Peak Billing data
+    apply_outer_border_to_range(book, sheet, {"range_string": f"J{first_data_row}:J{last_data_row}", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": f"K{first_data_row}:K{last_data_row}", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": f"L{first_data_row}:L{last_data_row}", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": f"M{first_data_row}:M{last_data_row}", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": f"N{first_data_row}:N{last_data_row}", "border_style": 1})
+    apply_outer_border_to_range(book, sheet, {"range_string": f"J{first_data_row}:O{last_data_row}", "border_style": 5})
+
+    # Center all cells
+    centered = book.add_format({'align': 'center', 'valign': 'vcenter'})
+    sheet.conditional_format(f'B16:O{last_data_row}', {'type': 'no_errors', 'format' : centered})
+
 
 def pseg_parse(csv_file_name: str, xslx_file_name: str) -> None:
     """
@@ -89,7 +231,11 @@ def pseg_parse(csv_file_name: str, xslx_file_name: str) -> None:
         print('Error creating worksheet!')
         return
 
-    add_title_cells(workbook, worksheet)
+    # first_row is cell addressing (one-based).
+    # sheet_row is row addressing (zero-based).
+    # add_title_cells returns row in cell addressing mode, which is one-based.
+    first_row: int = add_title_cells(workbook, worksheet)
+    sheet_row: int = first_row - 1
 
     with open(csv_file_name) as csv_file:
         csv_reader = reader(csv_file)
@@ -103,7 +249,6 @@ def pseg_parse(csv_file_name: str, xslx_file_name: str) -> None:
         try:
             line: int = 0
             meter: list[str]
-            sheet_row: int = 3  # Last title row is 3 and worksheet cell indexing is zero based.
             for line, meter in enumerate(csv_reader):
                 gen_meter = next(csv_reader)
                 try:
@@ -157,6 +302,8 @@ def pseg_parse(csv_file_name: str, xslx_file_name: str) -> None:
             print('Read beyond end of file.  Check that both meter and generated meter data are included.')
 
     worksheet.autofit()
+    add_formulas(worksheet, FIRST_HEADER_ROW, first_row, sheet_row)
+    format_cells(workbook, worksheet, first_row, sheet_row)
     workbook.close()
 
 def main():
