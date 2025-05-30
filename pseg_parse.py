@@ -15,8 +15,8 @@ FIRST_HEADER_ROW: int = 3
 # Peak and super off peak time periods.
 # Peak time is from 3:00 PM up to 7:00 PM except weekends.  3:00 PM reading is last meter reading for off-peak.  3:15 is first peam reading.
 # Similarly, the last peak reading is at 7:00 PM, and off-peak starts with the 7:15 PM reading.
-PEAK_START: time = time(15, 0, 1)
-PEAK_END: time = time(19, 0, 0)
+PEAK_START: time = time(15, 0, 0)
+PEAK_END: time = time(18, 59, 59)
 
 # Super Off-Peak is from 10:00 PM up to 6:00:00 AM including weekends.
 # Similar to peak start and end, The last off-peak reading ends at 10:00 PM and 10:15 is the first meter reading for super off-peak.
@@ -56,7 +56,7 @@ def is_super_off_peak_time(date_time_val: datetime) -> bool:
 
     return (time_val >= SUPER_OFF_PEAK_START) and (time_val <= SUPER_OFF_PEAK_END)
 
-def add_title_cells(book, sheet) -> int:
+def add_title_cells(book, sheet, default_format) -> int:
     """
     Adds titles for various TOU plans
     """
@@ -130,10 +130,8 @@ def add_title_cells(book, sheet) -> int:
 
     sheet.write_row(f'A{row_num}', ['Time', 'Consumed', 'Generated', '',
                            'Consumed', 'Generated', 'Consumed', 'Generated', '',
-                           'Consumed', 'Generated', 'Consumed', 'Generated', 'Consumed', 'Generated'])
+                           'Consumed', 'Generated', 'Consumed', 'Generated', 'Consumed', 'Generated'], default_format)
     row_num += 1
-
-    sheet.freeze_panes(f'B{row_num}')
 
     # Return first row number after titles
     return row_num
@@ -216,9 +214,8 @@ def format_cells(book, sheet, first_data_row: int, last_data_row: int) -> None:
     apply_outer_border_to_range(book, sheet, {"range_string": f"N{first_data_row}:N{last_data_row}", "border_style": 1})
     apply_outer_border_to_range(book, sheet, {"range_string": f"J{first_data_row}:O{last_data_row}", "border_style": 5})
 
-    # Center all cells
-    centered = book.add_format({'align': 'center', 'valign': 'vcenter'})
-    sheet.conditional_format(f'B16:O{last_data_row}', {'type': 'no_errors', 'format' : centered})
+    sheet.autofit()
+    sheet.freeze_panes(f'B{first_data_row}')
 
 
 def pseg_parse(csv_file_name: str, xslx_file_name: str) -> None:
@@ -227,6 +224,7 @@ def pseg_parse(csv_file_name: str, xslx_file_name: str) -> None:
     """
     workbook: Workbook = xlsxwriter.Workbook(xslx_file_name, {'default_date_format': 'mmm dd yyyy hh:mm'})
     worksheet: Unknown | Worksheet = workbook.add_worksheet('PSEG TOU Usage')
+    centered_fmt = workbook.add_format({'align': 'center', 'valign': 'vcenter'})
     if worksheet is None:
         print('Error creating worksheet!')
         return
@@ -234,7 +232,7 @@ def pseg_parse(csv_file_name: str, xslx_file_name: str) -> None:
     # first_row is cell addressing (one-based).
     # sheet_row is row addressing (zero-based).
     # add_title_cells returns row in cell addressing mode, which is one-based.
-    first_row: int = add_title_cells(workbook, worksheet)
+    first_row: int = add_title_cells(workbook, worksheet, centered_fmt)
     sheet_row: int = first_row - 1
 
     with open(csv_file_name) as csv_file:
@@ -295,13 +293,12 @@ def pseg_parse(csv_file_name: str, xslx_file_name: str) -> None:
                         kwh_data.extend([0, 0, consumed, generated, ''])
                         # Columns J-P - Super Off-Peak Billing - Peak Consumed and Gen'd, Off-Peak Consumed and Gen'd, Super Off-Peak Consumed and Gen'd, and empty cell.
                         kwh_data.extend([0, 0, consumed, generated, 0, 0, ''])
-                worksheet.write_row(sheet_row, 1, kwh_data)
+                worksheet.write_row(sheet_row, 1, kwh_data, centered_fmt)
                 sheet_row += 1
 
         except StopIteration:
             print('Read beyond end of file.  Check that both meter and generated meter data are included.')
 
-    worksheet.autofit()
     add_formulas(worksheet, FIRST_HEADER_ROW, first_row, sheet_row)
     format_cells(workbook, worksheet, first_row, sheet_row)
     workbook.close()

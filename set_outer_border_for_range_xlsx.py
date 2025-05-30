@@ -1,9 +1,14 @@
 # Standard Library
 import re
 import string
+from typing import TypedDict
 
 # Third Party Stuff
 import xlsxwriter
+from xlsxwriter.utility import xl_cell_to_rowcol
+
+CellCentering = TypedDict('CellCentering', {'align': str, 'valign': str})
+CenteringType = TypedDict('CenteringType', {'range_string': str, 'centering': CellCentering})
 
 EXCEL_RANGE_PATTERN = re.compile(r'([a-zA-Z]+)([\d]+):([a-zA-Z]+)([\d]+)')
 
@@ -24,7 +29,7 @@ XLSXWRITER_FORMAT_PROPERTIES = (
     'rotation',
     'text_wrap',
     'text_justlast',
-    # 'center_across',
+#   'center_across',
     'indent',
     'shrink',
     'pattern',
@@ -168,3 +173,21 @@ def apply_outer_border_to_range(workbook, worksheet, options=None):
     }
     apply_border_to_cell(workbook, worksheet, last_row_index, last_col_index, bottom_right_border)
 
+# def apply_centering_to_range(book, sheet, options: CenteringType) -> None:
+#    """
+#    Applies vertical and horizontal alignment to a range of cells.
+#    """"
+#    top_left: str
+#    btm_right: str
+#
+#    first_row: int
+#    last_row: int
+#    first_col: int
+#    last_col: int
+#
+#    top_left, btm_right = options['range_string'].split(':')
+#    first_row, first_col = xl_cell_to_rowcol(top_left)
+#    last_row, last_col = xl_cell_to_rowcol(btm_right)
+#
+#    for row in range(first_row, last_row + 1):
+#        for col in range(first_col, last_col + 1):
