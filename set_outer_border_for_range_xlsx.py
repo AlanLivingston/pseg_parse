@@ -51,7 +51,9 @@ def duplicate_xlsxwriter_format_object(workbook, old_format):
     properties = {}
     if old_format is not None:
         for property_name in XLSXWRITER_FORMAT_PROPERTIES:
-            properties[property_name] = getattr(old_format, property_name)
+            val = getattr(old_format, property_name)
+            if val is not None:
+                properties[property_name] = val 
 
     return workbook.add_format(properties)
 
