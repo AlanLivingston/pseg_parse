@@ -7,8 +7,8 @@
             {
             "name": "Python Debugger: pseg_parse",
             "args":[
-                "-b", ".\\2025-04-14 to 2025-05-15--Usage.csv",
-                "-e", ".\\2025-04-14 to 2025-05-15--TOU Usage Detail.xlsx"
+                "-b", "D:\\NapcoSvn\\Python\\pseg_parse_git\\PSEG Bills\\Downloaded Usage\\2025-07-17 to 2025-08-15--PSEGLI Usage.csv",
+                "-e", "D:\\NapcoSvn\\Python\\pseg_parse_git\\PSEG Bills\\Parsed\\2025-07-17 to 2025-08-15--TOU Usage Detail.xlsx"
             ],
             "type": "debugpy",
             "request": "launch",
